@@ -1,0 +1,123 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.Assertions;
+using UnityEngine;
+
+public class BallPhysics : MonoBehaviour
+{
+    [SerializeField]
+    private Vector3 m_vPlayerPos;
+
+    [SerializeField]
+    private Vector3 m_vInitialVel;
+
+    [SerializeField]
+    private float m_fKickPower;
+
+    [SerializeField]
+    private bool m_bDubugKickBall = false;
+
+    [SerializeField]
+    private bool m_resetBall = false;
+
+    [SerializeField]
+    private GameObject m_PlayerRef = null;
+
+    [SerializeField]
+    private GameObject m_CenterFieldRef = null;
+
+    private GameObject m_targetDisplay = null;
+
+    private float m_fDistanceToTarget = 0.0f;
+
+    private Vector3 vDebugHeading;
+
+    private Rigidbody m_rb = null;
+
+    private bool m_bIsGrounded = true;
+
+    void Start()
+    {
+        m_rb = GetComponent<Rigidbody>();
+        Assert.IsNotNull(m_rb, "projectileComp is null");
+
+        CreateLandingDisplay();
+        m_fDistanceToTarget = (m_targetDisplay.transform.position - transform.position).magnitude;
+    }
+
+    void Update()
+    {
+        if(m_resetBall)
+        {
+            Reset();
+            m_resetBall = !m_resetBall;
+        }
+
+        if(m_bIsGrounded)
+        {
+            //m_targetDisplay.transform.position = m_vTargetPos;
+            //vDebugHeading = m_vTargetPos - transform.position;
+
+            //m_vPlayerPos = m_PlayerRef.transform.position;
+            //m_vInitialVel.y = m_fKickPower;
+        }
+        if(m_bDubugKickBall && m_bIsGrounded)
+        {
+            m_bDubugKickBall = false;
+            OnKickBall();
+        }
+    }
+
+    private void Reset()
+    {
+        transform.position = m_CenterFieldRef.transform.position;
+        m_rb.velocity = Vector3.zero;
+    }
+
+    public void OnKickBall()
+    {
+        m_fDistanceToTarget = (m_targetDisplay.transform.position - transform.position).magnitude;
+
+        float fMaxHeight = m_targetDisplay.transform.position.y;
+        float fRange = (m_fDistanceToTarget * 2);
+        float fTheta = Mathf.Atan((4 * fMaxHeight) / fRange);
+
+        float fInitVelMag = Mathf.Sqrt((2 * Mathf.Abs(Physics.gravity.y) * fMaxHeight)) / Mathf.Sin(fTheta);
+
+
+        m_vInitialVel.x = -(m_vPlayerPos.x - transform.position.x) * m_fKickPower;
+        m_vInitialVel.y = fInitVelMag * Mathf.Sin(fTheta);
+        m_vInitialVel.z = fInitVelMag * Mathf.Cos(fTheta);
+
+        m_rb.velocity = m_vInitialVel;
+    }
+
+    private void CreateLandingDisplay()
+    {
+        m_targetDisplay = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        m_targetDisplay.transform.position = Vector3.zero;
+        m_targetDisplay.transform.localScale = new Vector3(1.0f, 0.1f, 1.0f);
+        m_targetDisplay.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+        m_targetDisplay.GetComponent<Renderer>().material.color = Color.red;
+        m_targetDisplay.GetComponent<Collider>().enabled = false;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position + vDebugHeading, transform.position);
+    }
+
+
+
+}
+
+
+////Old update()
+//float goalNetZ = 5;
+//float zDistance = Mathf.Abs(goalNetZ - transform.position.z);
+//float zFactor = zDistance / m_vDisplacementPlayerBall.z;
+//float endX = zFactor * m_vDisplacementPlayerBall.x + transform.position.x;
+
+//m_vTargetPos = new Vector3(endX, 2.0f, goalNetZ);
